@@ -41,11 +41,17 @@ export default {
   // Build Configuration: https://go.nuxtjs.dev/config-build
   build: {
   },
-  
+
   apollo: {
     clientConfigs: {
       default: {
-        httpEndpoint: 'http://localhost:4000',
+        httpEndpoint: 'https://api.github.com/graphql',
+        httpLinkOptions: {
+          credentials: 'include',
+          headers: {
+            'authorization': 'Bearer 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'
+          }
+        }
       }
     }
   }
