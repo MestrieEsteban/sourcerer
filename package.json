@@ -13,6 +13,7 @@
     "bootstrap": "^4.6.0",
     "bootstrap-vue": "^2.21.2",
     "chart.js": "2",
+    "chartjs-plugin-datalabels": "^2.0.0",
     "core-js": "^3.15.1",
     "graphql-tag": "^2.12.5",
     "nuxt": "^2.15.7",

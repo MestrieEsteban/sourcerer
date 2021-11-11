@@ -1,3 +1,4 @@
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@0.1.0"></script>
 <template>
   <div>
     <b-container>
@@ -72,6 +73,38 @@
 				<pulse-loader color="#C0F1E2" size="40px"></pulse-loader>
 			</div>
 		</b-row>
+
+        <b-row style="padding-top:40px">
+			<h1>Repositories</h1>
+		</b-row>
+		<b-row>
+			<div v-if="chartLoadR == true" class="center">
+				<b-card :width="1000" no-body v-for="item in this.repos" :key="item.name">
+							<div v-if="item.primaryLanguage">
+					<b-card-header style="width:1000px;" header-tag="header" :class=item.name>
+						<b-button block v-b-toggle="`${item.name}`" variant="info">
+								<h4>
+									{{item.name}}<br>
+									<b-badge :style="`background-color:${item.primaryLanguage.color}; color:#0f0f0f`">{{item.primaryLanguage.name}}</b-badge>
+								</h4>
+						</b-button>
+					</b-card-header>
+							</div>
+					<b-collapse :id=item.name visible accordion="my-accordion" role="tabpanel">
+						<b-card-body>
+							<div v-if="item.defaultBranchRef">
+							<h4>
+								Number of commit in this repositories : <b-badge>{{item.defaultBranchRef.target.history.totalCount}}</b-badge>
+							</h4>
+							</div>
+						</b-card-body>
+					</b-collapse>
+				</b-card>
+			</div>
+			<div v-else class="center">
+				<pulse-loader color="#C0F1E2" size="40px"></pulse-loader>
+			</div>
+		</b-row>
 		    
 		</b-row>
       </b-container>
@@ -126,7 +159,6 @@ import gql from 'graphql-tag'
 import BarChart from "~/components/BarChart.vue";
 import DoughnutChart from "~/components/DoughnutChart.vue";
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue'
-
 
 const ALL_CHARACTERS_QUERY = gql`
   query ALL_CHARACTERS_QUERY {
@@ -199,12 +231,14 @@ export default {
 		return {
 			user: '',
 			countCommit: '...',
-			countLoading: false,
 			name: '',
 			language: [],
-			chartLoad: false,
+			countLoading: false,
+			chartLoad:  false,
 			chartLoadD: false,
+			chartLoadR: true,
 			repoNodes: [],
+			repos:[],
 			Overview: {
 				labels: [],
 				datasets: [{
@@ -232,10 +266,15 @@ export default {
 				legend: {
 					display: true,
 					position: 'left',
-					rtl: true,
 				},
 				tooltips: {backgroundColor: "#555555"},
 				scales: {y: {beginAtZero: true}},
+				plugins: {
+					datalabels: {
+						anchor: "end",
+						align:  "end"
+					},
+				},
 			},
 		}
 	},
@@ -282,6 +321,7 @@ export default {
 
 			//Refactor
 			let repoNodes = this.user.repositories.nodes;
+			this.repos = this.user.repositories.nodes.reverse();
 			let currentNode = {};
 			repoNodes = repoNodes
 				.filter((node) => {
@@ -341,8 +381,8 @@ export default {
 			this.languages.datasets[0].data = percentArray
 			this.languages.datasets[0].backgroundColor = colorArray
 			this.chartLoadD = true
-
 		}
+		
 	},
 }
 </script>
