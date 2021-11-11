@@ -21,7 +21,7 @@
                 </b-col>
                 <b-col>
                   <div class="buttd btn1">
-                    Commits <b>{{ countLoading == true ? '...' : countCommit }}</b>
+                    Commits <b>{{ countLoading != true ? '...' : countCommit }}</b>
                   </div>
                 </b-col>
                 <b-col>
@@ -48,17 +48,31 @@
             </div>
           </b-col>
         </b-row>
+
         <b-row style="padding-top:40px">
 			<h1>Overview</h1>
 		</b-row>
 		<b-row>
-		    <div v-if="chartLoag == true">
-				<BarChart :data="Overview" :options="barChartOptions" />
+		    <div v-if="chartLoad == true" class="center">
+				<BarChart :width="1000" :data="Overview" :options="barChartOptionsOver" />
 			</div>
-		    <div v-else>
+		    <div v-else class="center">
 				<pulse-loader color="#C0F1E2" size="40px"></pulse-loader>
 			</div>
-
+		</b-row>
+		
+        <b-row style="padding-top:40px">
+			<h1>languages</h1>
+		</b-row>
+		<b-row>
+			<div v-if="chartLoadD == true" class="center">
+				<DoughnutChart :width="1000" :data="languages" :options="barChartOptions" />
+			</div>
+			<div v-else class="center">
+				<pulse-loader color="#C0F1E2" size="40px"></pulse-loader>
+			</div>
+		</b-row>
+		    
 		</b-row>
       </b-container>
     </b-container>
@@ -100,11 +114,17 @@
   height: 200px;
   line-height: 100px;
 }
+.center{
+	display: block; 
+	margin-left: auto; 
+	margin-right: auto;
+}
 
 </style>
 <script>
 import gql from 'graphql-tag'
 import BarChart from "~/components/BarChart.vue";
+import DoughnutChart from "~/components/DoughnutChart.vue";
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue'
 
 
@@ -123,10 +143,7 @@ const ALL_CHARACTERS_QUERY = gql`
       }
       location
       avatarUrl
-      repositories(
-        first: 100
-        orderBy: { field: CREATED_AT, direction: DESC }
-      ) {
+      repositories(ownerAffiliations: OWNER, isFork: false, first: 100) {
         totalCount
         nodes {
           name
@@ -139,11 +156,14 @@ const ALL_CHARACTERS_QUERY = gql`
             name
             color
           }
-          languages(first: 20) {
-            nodes {
-              name
-              color
-            }
+          languages(first: 100) {
+			edges {
+				size
+				node {
+					color
+					name
+				}
+			}
           }
           collaborators {
             nodes {
@@ -174,7 +194,7 @@ export default {
 		prefetch: true,
 		},
 	},
-	components: { BarChart, PulseLoader },
+	components: { BarChart, PulseLoader, DoughnutChart },
   	data: function () {
 		return {
 			user: '',
@@ -182,65 +202,147 @@ export default {
 			countLoading: false,
 			name: '',
 			language: [],
-			chartLoag: false,
+			chartLoad: false,
+			chartLoadD: false,
+			repoNodes: [],
 			Overview: {
-			labels: [],
-			datasets: [
-				{
-					data: [3, 59],
-				},
-			],
-		},
+				labels: [],
+				datasets: [{
+					data: [],
+					backgroundColor: [],
+					label: 'Commit',
+				},],
+			},
+			languages: {
+				labels: [],
+				datasets: [{
+					data: [],
+					backgroundColor: [],
+					label: 'Percentage',
+				},],
+			},
+			barChartOptionsOver: {
+				responsive: true,
+				legend: {display: false},
+				tooltips: {backgroundColor: "#555555"},
+				scales: {y: {beginAtZero: true}},
+			},
 			barChartOptions: {
 				responsive: true,
 				legend: {
-				display: true,
+					display: true,
+					position: 'left',
+					rtl: true,
 				},
-				tooltips: {
-				backgroundColor: "#17BF62",
-				},
-				scales: {
-					y: {
-						beginAtZero: true
-					}
-				},
+				tooltips: {backgroundColor: "#555555"},
+				scales: {y: {beginAtZero: true}},
 			},
 		}
 	},
+	beforeMount: function () {
+		this.getBrain()
+	},
 	mounted: function () {
-		this.countCommits()
+		this.getOverview()
 		this.getLanguages()
-
 	},
 	methods: {
 		countCommits: function () {
-		this.countLoading = true
-		this.countCommit = 0
-		this.user.repositories.nodes.forEach((repos) => {
-			if (repos.defaultBranchRef)
-			this.countCommit += repos.defaultBranchRef.target.history.totalCount
-		})
-		this.countLoading = false
+		// this.countLoading = true
+		// this.countCommit = 0
+		// this.user.repositories.nodes.forEach((repos) => {
+		// 	if (repos.defaultBranchRef)
+		// 		this.countCommit += repos.defaultBranchRef.target.history.totalCount
+		// })
+		// this.countLoading = false
 		},
-		getLanguages: function () {
-			this.user.repositories.nodes.forEach(repos => {
-			if(repos.primaryLanguage){
+		getBrain: function () {
+			// this.user.repositories.nodes.forEach(repos => {
+			// if(repos.primaryLanguage){
+			// 	let name =  repos.primaryLanguage.name ? repos.primaryLanguage.name : 'No language'
+			// 	if(!this.Overview.labels.some(e => e === name))
+			// 	{
+			// 		this.Overview.labels.push(name)
+			// 		if(!this.Overview.labels[name])
+			// 			this.Overview.labels[name] = 0
+			// 		this.Overview.labels[name] += repos.defaultBranchRef.target.history.totalCount
+			// 	}
+			// }
+			// user.repositories.nodes.forEach(repos => {
+			// 	let name =  element.primaryLanguage.name
+			// 	if(languages[name] === undefined){
+			// 		languages[name] = repos.defaultBranchRef.target.history.totalCount
+			// 	}
+			// 	else{
+			// 		languages[name] += repos.defaultBranchRef.target.history.totalCount
+			// 	}
+			// 	});	
+			// });	
+			// console.log(this.Overview.labels)
 
-				let name =  repos.primaryLanguage.name ? repos.primaryLanguage.name : 'No language'
-				if(!this.Overview.labels.some(e => e === name))
-					this.Overview.labels.push(name)
-				// console.log(name)
-				// if(!this.labels.name){
-				// 	// this.labels[name] = repos.defaultBranchRef.target.history.totalCount
-				// }
-				// else{
-				// 	this.labels[name] += repos.defaultBranchRef.target.history.totalCount
-				// }
-			}
-			});	
-			this.chartLoag = true		
-			
+			//Refactor
+			let repoNodes = this.user.repositories.nodes;
+			let currentNode = {};
+			repoNodes = repoNodes
+				.filter((node) => {
+				currentNode = node;
+				if(node.languages.edges){
+					return node.languages.edges.length > 0;
+				}
+				})
+				.reduce((acc, curr) => curr.languages.edges.concat(acc) ? curr.languages.edges.concat(acc) : "" , [])
+				.reduce((acc, prev) => {
+				let langSize = acc[prev.node.name] ? acc[prev.node.name].commit : 0;
+				langSize = langSize + currentNode.defaultBranchRef.target.history.totalCount;
+				return {
+					...acc,
+					[prev.node.name]: {
+					name: prev.node.name,
+					color: prev.node.color,
+					commit: langSize,
+					percent: 0
+					},
+				};
+				}, {});	
+			this.repoNodes = Object.entries(repoNodes).sort((a, b) => b[1].commit - a[1].commit);
+			return;
 		},
+		getOverview: function (){
+			let repoNodes = this.repoNodes;
+			 
+			let nameArray = [], valueArray = [], colorArray = [], countCommit = 0
+			repoNodes.forEach(function(repo) {
+				nameArray.push([repo[0]])
+				valueArray.push(repo[1].commit)
+				countCommit += repo[1].commit
+				colorArray.push(repo[1].color)
+			});
+			this.countCommit = countCommit
+			this.countLoading = true
+
+			this.Overview.labels = nameArray
+			this.Overview.datasets[0].data = valueArray
+			this.Overview.datasets[0].backgroundColor = colorArray
+			this.chartLoad = true
+		},
+		getLanguages: function() {
+			let repoNodes = this.repoNodes;
+			
+			let nameArray = [], valueArray = [], colorArray = [], countCommit = 0, percentArray = []
+			repoNodes.forEach(function(repo) {
+				nameArray.push([repo[0]])
+				countCommit += repo[1].commit
+				colorArray.push(repo[1].color)
+			});
+			repoNodes.forEach(function(repo) {
+				percentArray.push(((repo[1].commit / countCommit) * 100).toFixed(2))
+			});
+			this.languages.labels = nameArray
+			this.languages.datasets[0].data = percentArray
+			this.languages.datasets[0].backgroundColor = colorArray
+			this.chartLoadD = true
+
+		}
 	},
 }
 </script>
